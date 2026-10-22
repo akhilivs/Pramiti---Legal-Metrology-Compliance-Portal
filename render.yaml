@@ -10,6 +10,7 @@ services:
     runtime: python
     rootDir: backend
     plan: free               # sleeps after 15 idle minutes; the first request then takes ~1 minute
+    region: singapore        # nearest to India; create the Neon database in Singapore too
     buildCommand: pip install -r requirements.txt
     # Trust Render's proxy headers so photo links are built as https://
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
