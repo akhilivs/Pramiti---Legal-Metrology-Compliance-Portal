@@ -1,0 +1,407 @@
+@import "tailwindcss";
+
+/* Theme is chosen by data-theme on <html> (set before paint in layout.tsx) */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+  Pramiti design language
+  ----------------------
+  Light "ivory paper" ground, indigo ink (Bagru / Dabu indigo dyeing), saffron & India-green
+  accents from the tricolour, kumkum maroon for violations and antique gold for borders.
+  Motifs: jaali lattice (Mughal stone screens), block-print butis, temple-border bands and
+  rangoli rosettes - kept subtle so the portal stays sober and official.
+
+  Dark mode swaps the ground for night-indigo and lifts the inks so they read on it. Use
+  `navy` (not `indigo`) for solid bars and selected chips that carry white text: navy stays
+  deep in both themes, while `indigo` turns light in dark mode for text and outlines.
+*/
+
+:root {
+  --ivory: #faf6ee;
+  --paper: #fffdf8;
+  --parchment: #f3ecdd;
+  --sand: #e7dcc5;
+  --sand-strong: #d8c8a6;
+  --ink: #2a1f14;
+  --ink-soft: #4a3d2e;
+  --muted: #7a6a55;
+  --indigo: #22305e;
+  --indigo-600: #2f4180;
+  --indigo-50: #eef0f7;
+  --navy: #22305e;
+  --navy-600: #2f4180;
+  --saffron: #d9762b;
+  --saffron-600: #bf6420;
+  --saffron-50: #fdf1e6;
+  --green: #1f6b45;
+  --green-50: #e9f3ec;
+  --maroon: #8a1f1d;
+  --maroon-50: #f8eaea;
+  --gold: #b08d3e;
+  --gold-soft: #d9c38f;
+  --chart-a: #3b4f8f;
+  --chart-b: #a8322d;
+  --field: #ffffff;
+  --placeholder: #a6977f;
+}
+
+/* Screen only, so printed reports always come out on white paper */
+@media screen {
+  :root[data-theme="dark"] {
+    --ivory: #12141c;
+    --paper: #1a1d28;
+    --parchment: #232736;
+    --sand: #303547;
+    --sand-strong: #434a60;
+    --ink: #ece5d8;
+    --ink-soft: #c9bfae;
+    --muted: #9d927f;
+    --indigo: #a3b4f2;
+    --indigo-600: #bcc8f6;
+    --indigo-50: #222a47;
+    --navy: #2a3a78;
+    --navy-600: #34479a;
+    --saffron-600: #e58a45;
+    --saffron-50: #3a2a1c;
+    --green: #5cbf8a;
+    --green-50: #17301f;
+    --maroon: #ef7d73;
+    --maroon-50: #3a1d1e;
+    --gold: #c9a55a;
+    --chart-a: #7f93d6;
+    --chart-b: #e0685f;
+    --field: #151822;
+    --placeholder: #7d7465;
+  }
+
+  html[data-theme="dark"] {
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-ivory: var(--ivory);
+  --color-paper: var(--paper);
+  --color-parchment: var(--parchment);
+  --color-sand: var(--sand);
+  --color-sand-strong: var(--sand-strong);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-muted: var(--muted);
+  --color-indigo: var(--indigo);
+  --color-indigo-600: var(--indigo-600);
+  --color-indigo-50: var(--indigo-50);
+  --color-navy: var(--navy);
+  --color-navy-600: var(--navy-600);
+  --color-saffron: var(--saffron);
+  --color-saffron-600: var(--saffron-600);
+  --color-saffron-50: var(--saffron-50);
+  --color-green: var(--green);
+  --color-green-50: var(--green-50);
+  --color-maroon: var(--maroon);
+  --color-maroon-50: var(--maroon-50);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+
+  /* Cinzel is Latin-only, so headings fall back to Tiro Devanagari for Hindi glyphs */
+  --font-sans: var(--font-mukta), var(--font-tiro), "Segoe UI", system-ui, sans-serif;
+  --font-serif: var(--font-cinzel), var(--font-tiro), Georgia, serif;
+  --font-deva: var(--font-tiro), serif;
+  --font-brand: var(--font-baloo), var(--font-tiro), serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--ivory);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--saffron-50);
+  color: var(--indigo);
+}
+
+/* ---------------------------------------------------------------- patterns */
+
+/* Jaali: interlocking circles, as in carved sandstone screens */
+.bg-jaali {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%23b08d3e' stroke-opacity='0.16' stroke-width='1'%3E%3Ccircle cx='0' cy='0' r='20'/%3E%3Ccircle cx='40' cy='0' r='20'/%3E%3Ccircle cx='0' cy='40' r='20'/%3E%3Ccircle cx='40' cy='40' r='20'/%3E%3Ccircle cx='20' cy='20' r='20'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.bg-jaali-light {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.09' stroke-width='1'%3E%3Ccircle cx='0' cy='0' r='20'/%3E%3Ccircle cx='40' cy='0' r='20'/%3E%3Ccircle cx='0' cy='40' r='20'/%3E%3Ccircle cx='40' cy='40' r='20'/%3E%3Ccircle cx='20' cy='20' r='20'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Block-print buti scattered on the page ground (Sanganeri / Bagru) */
+.bg-buti {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Cg fill='%23b08d3e' fill-opacity='0.07'%3E%3Cpath d='M18 10c3 4 3 8 0 12-3-4-3-8 0-12z'/%3E%3Cpath d='M10 18c4-3 8-3 12 0-4 3-8 3-12 0z'/%3E%3Cpath d='M18 26c-3-4-3-8 0-12 3 4 3 8 0 12z'/%3E%3Cpath d='M26 18c-4 3-8 3-12 0 4-3 8-3 12 0z'/%3E%3Ccircle cx='54' cy='54' r='2.2'/%3E%3Ccircle cx='54' cy='47' r='1.2'/%3E%3Ccircle cx='54' cy='61' r='1.2'/%3E%3Ccircle cx='47' cy='54' r='1.2'/%3E%3Ccircle cx='61' cy='54' r='1.2'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Temple-border band: stepped triangles (as on Kanjeevaram silk borders) */
+.band-temple {
+  height: 10px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10' viewBox='0 0 20 10'%3E%3Cpath d='M0 10 L5 4 L7 6 L10 1 L13 6 L15 4 L20 10 Z' fill='%23b08d3e' fill-opacity='0.55'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: 20px 10px;
+}
+
+.band-temple-down {
+  height: 10px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10' viewBox='0 0 20 10'%3E%3Cpath d='M0 0 L5 6 L7 4 L10 9 L13 4 L15 6 L20 0 Z' fill='%23b08d3e' fill-opacity='0.55'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: 20px 10px;
+}
+
+/* Tricolour hairline */
+.tricolour {
+  height: 4px;
+  background: linear-gradient(90deg, var(--saffron) 0 33.33%, #ffffff 33.33% 66.66%, var(--green) 66.66% 100%);
+}
+
+/* Component classes live in a layer so Tailwind utilities can still override them. */
+@layer components {
+/* Single-column grids (phones) use a shrinkable track, so long or truncated text inside a grid
+   item can't push the page wider than the screen. Any grid-cols-* utility overrides this. */
+.grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ---------------------------------------------------------------- surfaces */
+
+.card {
+  position: relative;
+  background: var(--paper);
+  border: 1px solid var(--sand);
+  border-radius: 14px;
+  box-shadow: 0 1px 0 rgba(176, 141, 62, 0.08), 0 8px 24px -16px rgba(42, 31, 20, 0.18);
+}
+
+/* Double "frame" border like an illuminated manuscript page */
+.card-framed {
+  position: relative;
+}
+.card-framed::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(176, 141, 62, 0.28);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+/* Mehrab (arch) top for hero panels */
+.arch-top {
+  border-top-left-radius: 50% 64px;
+  border-top-right-radius: 50% 64px;
+}
+
+.heading-serif {
+  font-family: var(--font-serif);
+  letter-spacing: 0.005em;
+  font-variant-numeric: lining-nums;
+}
+
+/* Pramiti wordmark */
+.wordmark {
+  font-family: var(--font-baloo), var(--font-tiro), serif;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+.text-deva {
+  font-family: var(--font-deva);
+}
+
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.focus-ring:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--saffron);
+  outline-offset: 2px;
+}
+
+.field {
+  width: 100%;
+  border: 1px solid var(--sand-strong);
+  background: var(--field);
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+  color: var(--ink);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field:focus {
+  outline: none;
+  border-color: var(--indigo-600);
+  box-shadow: 0 0 0 3px rgba(47, 65, 128, 0.12);
+}
+.field::placeholder {
+  color: var(--placeholder);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 0.6rem 1.1rem;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.05s;
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.btn-primary {
+  background: var(--navy);
+  color: #fff;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--navy-600);
+}
+.btn-saffron {
+  background: var(--saffron);
+  color: #fff;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+}
+.btn-saffron:hover:not(:disabled) {
+  background: var(--saffron-600);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--indigo);
+  border: 1px solid var(--sand-strong);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--parchment);
+}
+
+}
+
+/* ---------------------------------------------------------------- motion */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise {
+  animation: rise 0.45s ease-out both;
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-spin-slow {
+  animation: spin-slow 14s linear infinite;
+}
+
+/* Scanning: a dotted wave of eight-pointed heritage stars sweeping over the label photo */
+.star-sweep {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.star-row {
+  position: absolute;
+  left: 3%;
+  right: 3%;
+  height: 44px;
+  animation: star-sweep 3.4s ease-in-out infinite;
+}
+@keyframes star-sweep {
+  0% {
+    top: 0%;
+  }
+  50% {
+    top: calc(100% - 44px);
+  }
+  100% {
+    top: 0%;
+  }
+}
+.star-dot {
+  position: absolute;
+  top: 50%;
+  width: 19px;
+  height: 19px;
+  margin: -9.5px 0 0 -9.5px;
+  color: #f2a65a;
+  filter: drop-shadow(0 0 5px rgba(242, 166, 90, 0.9));
+  animation: star-wave 1.5s ease-in-out infinite;
+}
+.star-dot-gold {
+  color: var(--gold-soft);
+  filter: drop-shadow(0 0 5px rgba(217, 195, 143, 0.9));
+}
+.star-dot svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+.star-dot .star-eye {
+  fill: var(--navy);
+}
+@keyframes star-wave {
+  0%,
+  100% {
+    transform: translateY(-13px) rotate(0deg) scale(0.75);
+    opacity: 0.65;
+  }
+  50% {
+    transform: translateY(13px) rotate(45deg) scale(1.15);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .animate-spin-slow,
+  .star-row,
+  .star-dot {
+    animation: none;
+  }
+  .star-row {
+    top: 45%;
+  }
+}
+
+@media print {
+  header,
+  footer,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}

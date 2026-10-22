@@ -1,0 +1,22 @@
+# Secrets
+.env
+.env.local
+backend/data/.secret_key
+CLAUDE/
+.claude/settings.local.json
+
+# Runtime data
+backend/compliance.db
+backend/uploads/
+backend/backups/
+backend/*.before-restore-*.db
+.pytest_cache/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/

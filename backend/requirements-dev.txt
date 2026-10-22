@@ -1,0 +1,3 @@
+-r requirements.txt
+# Tests (CI and local): pytest
+pytest>=8.0
