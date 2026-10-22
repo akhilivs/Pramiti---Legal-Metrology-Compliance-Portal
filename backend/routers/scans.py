@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy import or_
@@ -41,7 +42,8 @@ async def scan_package(
         raise HTTPException(status_code=400, detail="Add at least one photo of the package.")
     images = await read_images(files, MAX_IMAGES)
     try:
-        scan = create_scan(db, images=images, inspector=user.email, original_filename=files[0].filename or "capture.jpg",
+        # Gemini takes 10-60 s; off the event loop so the server keeps answering meanwhile
+        scan = await run_in_threadpool(create_scan, db, images=images, inspector=user.email, original_filename=files[0].filename or "capture.jpg",
                            location=location, state=state, district=district,
                            measured_quantity=measured_quantity, notes=notes)
     except AnalysisError as e:
@@ -69,7 +71,7 @@ async def scan_listing(
     title = None
     if url and not text and not images:
         try:
-            listing = fetch_listing(url)
+            listing = await run_in_threadpool(fetch_listing, url)
         except ListingError as e:
             raise HTTPException(status_code=422, detail=str(e))
         text, images, title = listing["text"], listing["images"], listing["title"]
@@ -78,7 +80,7 @@ async def scan_listing(
     if not text and not images:
         raise HTTPException(status_code=400, detail="Give a listing URL, paste the listing text, or upload screenshots.")
     try:
-        scan = create_scan(db, images=images, inspector=user.email, mode=LISTING, source="ecommerce",
+        scan = await run_in_threadpool(create_scan, db, images=images, inspector=user.email, mode=LISTING, source="ecommerce",
                            listing_text=text or None, source_url=url,
                            original_filename=(title or url or "Listing")[:200], state=state, notes=notes)
     except AnalysisError as e:

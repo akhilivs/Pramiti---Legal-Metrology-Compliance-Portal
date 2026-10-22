@@ -4,6 +4,7 @@ import time
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -69,7 +70,8 @@ async def submit_complaint(
     images = await read_images(files, MAX_IMAGES)
     state = (state or "").strip().upper() or None
     try:
-        scan = create_scan(db, images=images, inspector="public", source="complaint",
+        # Gemini takes 10-60 s; off the event loop so the server keeps answering meanwhile
+        scan = await run_in_threadpool(create_scan, db, images=images, inspector="public", source="complaint",
                            original_filename=files[0].filename or "complaint.jpg",
                            location=place, state=state, notes=f"Consumer complaint: {description.strip()[:1000]}")
     except AnalysisError as e:
