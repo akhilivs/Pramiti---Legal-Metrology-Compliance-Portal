@@ -6,6 +6,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 
 import batch_worker
+import photo_store
 from auth import ensure_default_users
 from config import CORS_ORIGINS, GEMINI_API_KEY, GEMINI_MODEL, UPLOAD_DIR, check_production_settings
 from database import SessionLocal, init_db
@@ -37,6 +38,9 @@ async def lifespan(app: FastAPI):
     print(f"Rules index ready: {len(r.docs)} passages ({r.corpus_pages} Gazette pages transcribed).")
     if not GEMINI_API_KEY:
         print("WARNING: GEMINI_API_KEY is not set - scanning will not work.")
+    restored = photo_store.restore()
+    if restored:
+        print(f"Restored {restored} photos from the database.")
     batch_worker.ensure_worker()
     yield
 

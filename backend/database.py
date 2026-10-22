@@ -4,7 +4,8 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from config import DATABASE_URL
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
+# pre-ping replaces connections a hosted database (e.g. Neon) closed while idle
+engine = create_engine(DATABASE_URL, connect_args=connect_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
@@ -36,6 +37,6 @@ def init_db():
         conn.execute(text("UPDATE scans SET source = 'label' WHERE source IS NULL"))
         conn.execute(text("UPDATE scans SET review_status = 'pending' WHERE review_status IS NULL"))
         conn.execute(text("UPDATE scans SET ai_verdict = verdict WHERE ai_verdict IS NULL"))
-        conn.execute(text("UPDATE scans SET is_demo = 0 WHERE is_demo IS NULL"))
+        conn.execute(text("UPDATE scans SET is_demo = :no WHERE is_demo IS NULL"), {"no": False})
         conn.execute(text("UPDATE scans SET manufacturer_key = lower(trim(brand)) "
                           "WHERE manufacturer_key IS NULL AND brand IS NOT NULL"))

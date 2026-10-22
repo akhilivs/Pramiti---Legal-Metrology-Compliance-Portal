@@ -5,6 +5,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 import models
+import photo_store
 from analyzer import AnalysisError
 from auth import audit, current_user, require_role
 from config import MAX_IMAGES, UPLOAD_DIR
@@ -183,8 +184,10 @@ def delete_scan(scan_id: int, db: Session = Depends(get_db), user: models.User =
         raise HTTPException(status_code=409, detail="This inspection has an approved or issued notice and cannot be deleted.")
     db.query(models.Notice).filter(models.Notice.scan_id == scan_id).delete()
     db.query(models.Complaint).filter(models.Complaint.scan_id == scan_id).update({"scan_id": None})
-    for f in scan.images or ([scan.image_file] if scan.image_file else []):
+    files = scan.images or ([scan.image_file] if scan.image_file else [])
+    for f in files:
         (UPLOAD_DIR / f).unlink(missing_ok=True)
+    photo_store.forget(db, files)
     db.delete(scan)
     audit(db, user.email, "scan.delete", f"scan:{scan_id}", scan.product_name)
     db.commit()

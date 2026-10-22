@@ -14,6 +14,7 @@ import uuid
 from PIL import Image, ImageDraw, ImageFont
 
 import models
+import photo_store
 from config import UPLOAD_DIR
 from pdf_generator import _BOLD, _REGULAR, _find
 from quantity import parse_quantity
@@ -306,6 +307,7 @@ def seed_demo(db) -> dict:
         img, regions = draw_label(b, product, fields, issues)
         name = f"demo_{uuid.uuid4().hex}.jpg"
         img.save(UPLOAD_DIR / name, quality=85)
+        photo_store.keep(db, [name])
         failed_ids = [c["id"] for c in checks if c["status"] == "fail"]
         failed_titles = [SHORT_EN.get(c["id"], c["title"].lower()) for c in checks if c["status"] == "fail"]
         summary = _summary(ai_verdict, failed_titles, fields["product_name"])[0]
@@ -395,6 +397,7 @@ def clear_demo(db) -> dict:
     for s in scans:
         for f in s.images or []:
             (UPLOAD_DIR / f).unlink(missing_ok=True)
+        photo_store.forget(db, s.images or [])
         db.delete(s)
     db.flush()
     return {"scans": len(ids), "notices": n_notices, "complaints": n_complaints}

@@ -8,6 +8,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from sqlalchemy.orm import Session
 
 import models
+import photo_store
 from analyzer import analyze
 from config import MAX_UPLOAD_MB, UPLOAD_DIR
 from quantity import price_arithmetic_check, quantity_check
@@ -144,6 +145,7 @@ def create_scan(
              "quantity_verification": "मापी गई मात्रा अनुमेय त्रुटि से कम है"}.get(c["id"], c["title"]) for c in computed_fails) + "।"
 
     names = save_images(images)
+    photo_store.keep(db, names)
     state = (state or "").strip().upper() or None
     scan = models.Scan(
         inspector=inspector,

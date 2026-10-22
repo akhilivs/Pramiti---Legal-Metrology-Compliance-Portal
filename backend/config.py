@@ -1,5 +1,6 @@
 """Central configuration, read once from environment / backend/.env."""
 import os
+import re
 import secrets
 from pathlib import Path
 
@@ -32,7 +33,9 @@ RULES_PDF_PATH = Path(os.getenv("RULES_PDF_PATH", str(PROJECT_DIR / "sih_eng.pdf
 RULES_CORPUS_PATH = DATA_DIR / "rules_corpus.json"
 
 # --- Database -----------------------------------------------------------------
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{(BASE_DIR / 'compliance.db').as_posix()}")
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{(BASE_DIR / 'compliance.db').as_posix()}").strip()
+# Neon / Render hand out postgres:// or postgresql:// URLs; use the psycopg (v3) driver for them
+DATABASE_URL = re.sub(r"^postgres(ql)?://", "postgresql+psycopg://", DATABASE_URL)
 
 # --- Auth ---------------------------------------------------------------------
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "official@metrology.gov.in").strip().lower()

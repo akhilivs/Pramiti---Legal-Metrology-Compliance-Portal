@@ -3,6 +3,8 @@ uvicorn[standard]>=0.27
 python-multipart>=0.0.6
 pydantic>=2.7
 sqlalchemy>=2.0
+# Postgres driver, used when DATABASE_URL points at a hosted database (e.g. Neon)
+psycopg[binary]>=3.2
 python-dotenv>=1.0
 pillow>=10.0
 google-genai>=1.20

@@ -88,24 +88,28 @@ secret is not used anywhere and should not be stored. Add the production fronten
 Build the frontend with `npm run build` and serve it with `npm start`. Development mode (`npm run dev`) is
 not minified and is much slower.
 
-### Render (backend) + Vercel (frontend)
+### Free hosting: Neon (database) + Render (backend) + Vercel (frontend)
 
-The backend keeps the SQLite database and photos on disk and runs bulk scans in a background thread, so
-it needs an always-on server with a persistent disk, not serverless functions.
+None of the three needs a card. Render's free plan has no persistent disk, so the data lives in a free
+Neon Postgres database. With any non-SQLite `DATABASE_URL`, every photo is also stored in the database
+and written back to `uploads/` when the server starts ([`photo_store.py`](backend/photo_store.py)).
 
-1. **Backend on Render**: *New → Blueprint*, pick this repository. [`render.yaml`](render.yaml) creates
-   the web service with a 1 GB disk at `/var/data` (database and photos) and a generated `SECRET_KEY`.
-   Enter `GEMINI_API_KEY`, `ADMIN_PASSWORD` and `CORS_ORIGINS` (your Vercel URL) when asked. Check
-   `https://<service>.onrender.com/api/health`. A disk needs a paid instance; on the free tier all data
-   is lost on every restart.
-2. **Frontend on Vercel**: *Add New → Project*, import this repository, set **Root Directory** to
+1. **Database on Neon**: sign up at neon.tech, create a project, and copy its connection string
+   (`postgresql://...neon.tech/...?sslmode=require`).
+2. **Backend on Render**: *New → Blueprint*, pick this repository. [`render.yaml`](render.yaml) creates
+   a free web service with a generated `SECRET_KEY`. Enter `DATABASE_URL` (the Neon string),
+   `GEMINI_API_KEY`, `ADMIN_PASSWORD` and `CORS_ORIGINS` (your Vercel URL) when asked. Check
+   `https://<service>.onrender.com/api/health`.
+3. **Frontend on Vercel**: *Add New → Project*, import this repository, set **Root Directory** to
    `frontend`, and set `NEXT_PUBLIC_API_URL` to the Render URL (no trailing slash). These values are
    built into the site, so redeploy after changing them.
-3. If the Vercel URL differs from `CORS_ORIGINS`, update it on Render. For Google sign-in, add the Vercel
+4. If the Vercel URL differs from `CORS_ORIGINS`, update it on Render. For Google sign-in, add the Vercel
    URL as an Authorised JavaScript origin.
 
-Every push to `main` redeploys both. If Hindi text in notice PDFs shows as boxes, add a Noto Sans
-Devanagari font to the repository and set `PDF_FONT_PATH` to it.
+Free-plan limits: the backend sleeps after 15 idle minutes and the next visit takes about a minute to
+wake it; Neon's free database holds 0.5 GB (several thousand inspections with photos). Every push to
+`main` redeploys both. If Hindi text in notice PDFs shows as boxes, add a Noto Sans Devanagari font to the
+repository and set `PDF_FONT_PATH` to it.
 
 ## Backups
 
@@ -170,7 +174,8 @@ backend/
   rules_kb.py          rules, checks, penalties     rag_engine.py  BM25 over rules + Gazette
   notice_pdf.py / pdf_generator.py  PDFs            build_rules_index.py  Gazette transcription
   seed_demo.py         demo data                    benchmark.py  accuracy benchmark
-  backup.py            backup / restore             tests/  pytest smoke tests
+  backup.py            backup / restore             photo_store.py  photos kept in a hosted database
+  tests/               pytest smoke tests
 frontend/src/
   app/                 /, /history, /scans/[id], /batch, /batch/[id], /insights, /offenders/[key],
                        /notices, /notices/[id], /complaints, /complaint and /complaint/track (public),

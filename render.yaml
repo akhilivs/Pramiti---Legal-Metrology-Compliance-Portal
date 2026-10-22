@@ -1,32 +1,28 @@
-# Render Blueprint for the Pramiti backend (the frontend is deployed on Vercel).
+# Render Blueprint for the Pramiti backend, on the free plan (the frontend is deployed on Vercel).
 # Render dashboard -> New -> Blueprint -> pick this repository. Values marked sync: false are
 # asked for once at creation and stay in Render's secret settings, never in this file.
+#
+# The free plan has no persistent disk, so data lives in a free hosted Postgres database (Neon):
+# inspections, notices and users, plus a copy of every photo that is written back on each restart.
 services:
   - type: web
     name: pramiti-api
     runtime: python
     rootDir: backend
-    plan: starter            # a persistent disk needs a paid instance
-    numInstances: 1          # bulk-scan worker and complaint rate limit assume one server
+    plan: free               # sleeps after 15 idle minutes; the first request then takes ~1 minute
     buildCommand: pip install -r requirements.txt
     # Trust Render's proxy headers so photo links are built as https://
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
     healthCheckPath: /api/health
-    disk:
-      name: pramiti-data
-      mountPath: /var/data   # database and photos live here and survive restarts and deploys
-      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.7
       - key: PRAMITI_ENV
         value: production
-      - key: DATABASE_URL
-        value: sqlite:////var/data/compliance.db
-      - key: UPLOAD_DIR
-        value: /var/data/uploads
       - key: SECRET_KEY
         generateValue: true
+      - key: DATABASE_URL
+        sync: false          # Neon connection string, postgresql://...neon.tech/...?sslmode=require
       - key: GEMINI_API_KEY
         sync: false
       - key: ADMIN_PASSWORD

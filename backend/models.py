@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, LargeBinary, String, Text
 
 from database import Base
 
@@ -165,3 +165,11 @@ class AuditLog(Base):
     action = Column(String, index=True)
     target = Column(String, nullable=True)
     details = Column(Text, nullable=True)
+
+
+class Photo(Base):
+    """Copy of an uploads/ photo, kept only when the database is external (see photo_store.py)."""
+    __tablename__ = "photos"
+
+    name = Column(String, primary_key=True)  # file name inside uploads/
+    data = Column(LargeBinary)
