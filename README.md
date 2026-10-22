@@ -11,6 +11,20 @@ manufacturer-wise intelligence.
 
 > Prototype built for Smart India Hackathon. AI findings are advisory and must be verified by an officer.
 
+## Live demo
+
+**<https://pramiti-gamma.vercel.app>**
+
+| Page | Link |
+| --- | --- |
+| Officer portal (sign in required) | <https://pramiti-gamma.vercel.app> |
+| Public complaint portal | <https://pramiti-gamma.vercel.app/complaint> |
+| Track a complaint | <https://pramiti-gamma.vercel.app/complaint/track> |
+
+The frontend is hosted on Vercel, the API on Render (free plan) and the database on Neon. The API sleeps
+after 15 idle minutes, so the first request after a break can take about a minute while it wakes up.
+Officer accounts are issued by the administrator; the demo credentials below are for local installs only.
+
 ## What it does
 
 | Area | Features |
@@ -58,7 +72,7 @@ Run on Windows by double-clicking **`start.bat`**. To start each part by hand:
 
 Open <http://localhost:3000>. The public complaint portal is at <http://localhost:3000/complaint>.
 
-### Accounts created on first start
+### Accounts created on first start (local install)
 
 | Role | E-mail | Password |
 | --- | --- | --- |
