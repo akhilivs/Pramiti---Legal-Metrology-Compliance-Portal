@@ -76,8 +76,8 @@ Heroku and so on) instead of uploading `.env` files.
 
 | Where | Variables |
 | --- | --- |
-| Backend | `PRAMITI_ENV=production`, `SECRET_KEY` (long random string), `ADMIN_PASSWORD`, `GEMINI_API_KEY`, `CORS_ORIGINS` (the real frontend URL), optionally `GOOGLE_CLIENT_ID`, `DATABASE_URL` |
-| Frontend | `NEXT_PUBLIC_API_URL`, optionally `NEXT_PUBLIC_GOOGLE_CLIENT_ID` |
+| Backend | `PRAMITI_ENV=production`, `SECRET_KEY` (long random string), `ADMIN_PASSWORD`, `GEMINI_API_KEY`, `CORS_ORIGINS` (the real frontend URL), optionally `GOOGLE_CLIENT_ID`, `DATABASE_URL`, `UPLOAD_DIR` |
+| Frontend | `NEXT_PUBLIC_API_URL`, optionally `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_SHOW_DEMO_LOGIN=false` |
 
 With `PRAMITI_ENV=production` the backend **refuses to start** while demo defaults remain: no
 `SECRET_KEY`, the demo admin password, or localhost in `CORS_ORIGINS`. It also skips creating the demo
@@ -87,6 +87,25 @@ secret is not used anywhere and should not be stored. Add the production fronten
 
 Build the frontend with `npm run build` and serve it with `npm start`. Development mode (`npm run dev`) is
 not minified and is much slower.
+
+### Render (backend) + Vercel (frontend)
+
+The backend keeps the SQLite database and photos on disk and runs bulk scans in a background thread, so
+it needs an always-on server with a persistent disk, not serverless functions.
+
+1. **Backend on Render**: *New → Blueprint*, pick this repository. [`render.yaml`](render.yaml) creates
+   the web service with a 1 GB disk at `/var/data` (database and photos) and a generated `SECRET_KEY`.
+   Enter `GEMINI_API_KEY`, `ADMIN_PASSWORD` and `CORS_ORIGINS` (your Vercel URL) when asked. Check
+   `https://<service>.onrender.com/api/health`. A disk needs a paid instance; on the free tier all data
+   is lost on every restart.
+2. **Frontend on Vercel**: *Add New → Project*, import this repository, set **Root Directory** to
+   `frontend`, and set `NEXT_PUBLIC_API_URL` to the Render URL (no trailing slash). These values are
+   built into the site, so redeploy after changing them.
+3. If the Vercel URL differs from `CORS_ORIGINS`, update it on Render. For Google sign-in, add the Vercel
+   URL as an Authorised JavaScript origin.
+
+Every push to `main` redeploys both. If Hindi text in notice PDFs shows as boxes, add a Noto Sans
+Devanagari font to the repository and set `PDF_FONT_PATH` to it.
 
 ## Backups
 
