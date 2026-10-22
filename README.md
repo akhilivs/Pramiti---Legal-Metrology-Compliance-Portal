@@ -1,5 +1,7 @@
 # Pramiti – Legal Metrology Compliance Portal
 
+[![CI](https://github.com/akhilivs/Pramiti---Legal-Metrology-Compliance-Portal/actions/workflows/ci.yml/badge.svg)](https://github.com/akhilivs/Pramiti---Legal-Metrology-Compliance-Portal/actions/workflows/ci.yml)
+
 *सही माप, सही दाम*: honest measure, fair price.
 
 Pramiti is an enforcement platform for Legal Metrology departments. It checks pre-packaged commodity labels
@@ -38,10 +40,13 @@ manufacturer-wise intelligence.
 ## Setup and run
 
 ```bash
+git clone https://github.com/akhilivs/Pramiti---Legal-Metrology-Compliance-Portal.git
+cd Pramiti---Legal-Metrology-Compliance-Portal
+
 cd backend
 pip install -r requirements.txt
-copy .env.example .env            # put your GEMINI_API_KEY in .env
-python seed_demo.py               # optional: load demonstration data
+copy .env.example .env            # Windows (macOS/Linux: cp .env.example .env), then put your GEMINI_API_KEY in .env
+python seed_demo.py               # optional: load demonstration data (python seed_demo.py --clear removes it)
 python build_rules_index.py       # optional, one-time: transcribe the scanned Gazette (already done)
 
 cd ../frontend
@@ -111,7 +116,7 @@ or `pg_dump` instead.
 
 ## Tests and CI
 
-`.github/workflows/ci.yml` runs on every push and pull request once the project is on GitHub:
+`.github/workflows/ci.yml` runs on every push and pull request (results in the repository's **Actions** tab):
 
 - **Backend**: `pytest` smoke tests against a throwaway database (startup, sign-in, role checks).
 - **Frontend**: lint, type check, production build, and `npm audit` of runtime dependencies.
@@ -139,14 +144,18 @@ cd frontend && npm run lint && npm run typecheck && npm run build
 ```
 backend/
   main.py              app + router wiring          routers/   auth, scans, batches, insights, notices, complaints, admin
-  analyzer.py          Gemini vision analysis       services.py  shared create/verdict logic
-  quantity.py          unit-price & First Schedule  ecommerce.py listing fetcher (SSRF-safe)
-  batch_worker.py      background bulk queue        rules_kb.py  rules, checks, penalties, states
-  rag_engine.py        BM25 over rules + Gazette    notice_pdf.py / pdf_generator.py
-  seed_demo.py         demo data                    benchmark.py accuracy benchmark
+  config.py            settings from .env           database.py / models.py  SQLAlchemy setup and tables
+  auth.py              passwords, sessions, roles   services.py  shared create/verdict logic
+  analyzer.py          Gemini vision analysis       quantity.py  unit-price & First Schedule
+  ecommerce.py         listing fetcher (SSRF-safe)  batch_worker.py  background bulk queue
+  rules_kb.py          rules, checks, penalties     rag_engine.py  BM25 over rules + Gazette
+  notice_pdf.py / pdf_generator.py  PDFs            build_rules_index.py  Gazette transcription
+  seed_demo.py         demo data                    benchmark.py  accuracy benchmark
+  backup.py            backup / restore             tests/  pytest smoke tests
 frontend/src/
-  app/                 /, /history, /scans/[id], /batch, /insights, /offenders/[key], /notices, /complaints,
-                       /complaint (public), /accuracy, /admin, /account, /rules
+  app/                 /, /history, /scans/[id], /batch, /batch/[id], /insights, /offenders/[key],
+                       /notices, /notices/[id], /complaints, /complaint and /complaint/track (public),
+                       /accuracy, /admin, /admin/audit, /account, /rules
   components/          Scanner, ScanReport, PhotoViewer, IndiaTileMap, AppShell, ...
   lib/                 api.ts, i18n.tsx (Hindi), offline.ts (IndexedDB queue)
 ```
