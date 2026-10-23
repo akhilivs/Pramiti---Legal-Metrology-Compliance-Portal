@@ -21,8 +21,9 @@ manufacturer-wise intelligence.
 | Public complaint portal | <https://pramiti-gamma.vercel.app/complaint> |
 | Track a complaint | <https://pramiti-gamma.vercel.app/complaint/track> |
 
-The frontend is hosted on Vercel, the API on Render (free plan) and the database on Neon. The API sleeps
-after 15 idle minutes, so the first request after a break can take about a minute while it wakes up.
+The frontend is hosted on Vercel, the API on Render (free plan) and the database on Neon. Render puts free
+services to sleep after 15 idle minutes; [`keep-awake.yml`](.github/workflows/keep-awake.yml) pings the API
+every 10 minutes to prevent that. If GitHub delays a ping, the first request can take about a minute.
 Officer accounts are issued by the administrator; the demo credentials below are for local installs only.
 
 ## What it does
@@ -120,8 +121,8 @@ and written back to `uploads/` when the server starts ([`photo_store.py`](backen
 4. If the Vercel URL differs from `CORS_ORIGINS`, update it on Render. For Google sign-in, add the Vercel
    URL as an Authorised JavaScript origin.
 
-Free-plan limits: the backend sleeps after 15 idle minutes and the next visit takes about a minute to
-wake it; Neon's free database holds 0.5 GB (several thousand inspections with photos). Every push to
+Free-plan limits: the backend sleeps after 15 idle minutes (the keep-awake workflow pings it every 10
+minutes; change its URL if your Render service has a different name); Neon's free database holds 0.5 GB (several thousand inspections with photos). Every push to
 `main` redeploys both. If Hindi text in notice PDFs shows as boxes, add a Noto Sans Devanagari font to the
 repository and set `PDF_FONT_PATH` to it.
 

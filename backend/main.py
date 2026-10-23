@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException
 
 import batch_worker
 import photo_store
@@ -21,7 +23,13 @@ class UploadFiles(StaticFiles):
     """Uploaded photos get random UUID names and are never rewritten, so browsers may cache them for good."""
 
     async def get_response(self, path, scope):
-        response = await super().get_response(path, scope)
+        try:
+            response = await super().get_response(path, scope)
+        except HTTPException as e:
+            # not restored from the database yet (fresh disk after a restart): fetch this one now
+            if e.status_code != 404 or not await run_in_threadpool(photo_store.fetch, path):
+                raise
+            response = await super().get_response(path, scope)
         if response.status_code == 200:
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         return response
@@ -38,9 +46,7 @@ async def lifespan(app: FastAPI):
     print(f"Rules index ready: {len(r.docs)} passages ({r.corpus_pages} Gazette pages transcribed).")
     if not GEMINI_API_KEY:
         print("WARNING: GEMINI_API_KEY is not set - scanning will not work.")
-    restored = photo_store.restore()
-    if restored:
-        print(f"Restored {restored} photos from the database.")
+    photo_store.restore_in_background()  # startup does not wait; photos asked for sooner are fetched on demand
     batch_worker.ensure_worker()
     yield
 

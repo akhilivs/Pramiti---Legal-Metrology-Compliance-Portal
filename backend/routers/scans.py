@@ -199,6 +199,7 @@ def delete_scan(scan_id: int, db: Session = Depends(get_db), user: models.User =
 @router.get("/report/{scan_id}")
 def download_pdf_report(scan_id: int, db: Session = Depends(get_db), user: models.User = Depends(current_user)):
     scan = get_scan_or_404(db, scan_id)
+    photo_store.ensure(scan.images or ([scan.image_file] if scan.image_file else []))
     pdf_bytes = generate_pdf_report(scan, UPLOAD_DIR)
     return Response(
         content=pdf_bytes,
