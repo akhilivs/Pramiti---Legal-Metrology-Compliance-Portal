@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { api, type Role } from '@/lib/api';
+import { api, DATA_CHANGED_EVENT, type Role } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { listPending, QUEUE_EVENT, syncPending } from '@/lib/offline';
 import { useAuth } from './AuthProvider';
@@ -139,12 +139,29 @@ export default function AppShell({ children }: { children: ReactNode }) {
     } catch {}
   }, [scale]);
 
-  useEffect(() => {
+  const loadBadges = useCallback(() => {
     api
       .stats()
       .then((s) => setBadges({ notices: s.notices_pending, complaints: s.open_complaints, review: s.pending_review }))
       .catch(() => {});
-  }, [pathname]);
+  }, []);
+
+  useEffect(() => {
+    loadBadges();
+  }, [pathname, loadBadges]);
+
+  // Keep the counts current after a change on this page, and when the officer comes back to the tab
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadBadges();
+    };
+    window.addEventListener(DATA_CHANGED_EVENT, loadBadges);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener(DATA_CHANGED_EVENT, loadBadges);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [loadBadges]);
 
   useEffect(() => {
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {

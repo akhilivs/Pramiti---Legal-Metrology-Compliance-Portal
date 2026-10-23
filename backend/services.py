@@ -4,6 +4,7 @@ import re
 import uuid
 
 from fastapi import HTTPException, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from PIL import Image, ImageOps, UnidentifiedImageError
 from sqlalchemy.orm import Session
 
@@ -37,7 +38,8 @@ async def read_images(files: list[UploadFile], max_count: int) -> list[Image.Ima
     images = []
     for f in files:
         data = await f.read()
-        images.append(load_image(data, f.filename or "image"))
+        # decoding is CPU work; off the event loop so other requests are not held up
+        images.append(await run_in_threadpool(load_image, data, f.filename or "image"))
     return images
 
 
@@ -45,7 +47,9 @@ def load_image(data: bytes, name: str) -> Image.Image:
     if len(data) > MAX_UPLOAD_MB * 1024 * 1024:
         raise HTTPException(status_code=413, detail=f"'{name}' is larger than {MAX_UPLOAD_MB} MB.")
     try:
-        image = ImageOps.exif_transpose(Image.open(io.BytesIO(data))).convert("RGB")
+        image = Image.open(io.BytesIO(data))
+        image.draft("RGB", (2400, 2400))  # JPEGs decode straight at reduced size: several times faster
+        image = ImageOps.exif_transpose(image).convert("RGB")
     except (UnidentifiedImageError, OSError):
         raise HTTPException(status_code=400, detail=f"'{name}' is not a readable image (use JPG, PNG or WEBP).")
     image.thumbnail((2400, 2400))

@@ -127,28 +127,74 @@ def _client() -> genai.Client:
 
 
 def _is_transient(msg: str) -> bool:
-    return any(s in msg for s in ("503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500", "INTERNAL", "overloaded"))
+    return any(s in msg for s in ("503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500", "INTERNAL", "overloaded",
+                                  "timed out", "Timeout", "DEADLINE_EXCEEDED"))
+
+
+# Whole AI step must finish well inside the 100 s a request may take behind Render's proxy
+# (upload and image handling need a few seconds too), or the browser sees an error while the
+# inspection still completes on the server.
+TOTAL_BUDGET_S = 70
+PER_CALL_TIMEOUT_S = 25
+LAST_RESORT_RESERVE_S = 20  # always leave the last (fastest) model this long
+COOL_OFF_S = 300  # an overloaded model is skipped by later inspections for this long
+
+_cooling: dict[str, float] = {}  # model -> time it may be tried again
+_no_thinking_level: set[str] = set()  # models that rejected thinking_level
+
+
+def _models() -> list[str]:
+    models = list(dict.fromkeys([GEMINI_MODEL, *GEMINI_FALLBACK_MODELS]))
+    now = time.monotonic()
+    ready = [m for m in models[:-1] if _cooling.get(m, 0) <= now]
+    return ready + models[-1:]  # the last resort is always tried
+
+
+def _call_config(config, model: str, timeout_s: float):
+    update = {"http_options": types.HttpOptions(timeout=int(timeout_s * 1000))}
+    # Flash models otherwise "think" for 10-20 s before answering; extraction does not need it.
+    # Lite models do not think by default.
+    if "lite" not in model and model not in _no_thinking_level and config.thinking_config is None:
+        update["thinking_config"] = types.ThinkingConfig(thinking_level="low")
+    return config.model_copy(update=update)
 
 
 def generate_with_fallback(contents, config=None):
-    """Call Gemini, retrying once and then falling back to other models on overload / rate limits."""
+    """Call Gemini, moving straight to the next model on overload, rate limits or timeouts.
+
+    Models that fail are skipped by later calls for a few minutes, so one overloaded model does not
+    add its delay to every inspection. Everything fits in TOTAL_BUDGET_S.
+    """
+    config = config or types.GenerateContentConfig()
+    deadline = time.monotonic() + TOTAL_BUDGET_S
+    models = _models()
     last = ""
-    for model in [GEMINI_MODEL, *GEMINI_FALLBACK_MODELS]:
-        for attempt in range(2):
+    for i, model in enumerate(models):
+        is_last = i == len(models) - 1
+        remaining = deadline - time.monotonic()
+        if not is_last and remaining < LAST_RESORT_RESERVE_S + 5:
+            continue  # not enough time for this one and the last resort; go to the last resort
+        timeout = max(5.0, min(PER_CALL_TIMEOUT_S, remaining if is_last else remaining - LAST_RESORT_RESERVE_S))
+        for _ in range(2):  # the second pass only runs if the model rejected thinking_level
             try:
-                return _client().models.generate_content(model=model, contents=contents, config=config), model
+                resp = _client().models.generate_content(model=model, contents=contents,
+                                                         config=_call_config(config, model, timeout))
+                _cooling.pop(model, None)
+                return resp, model
             except AnalysisError:
                 raise
             except Exception as e:
-                last = str(e)
-                if "API key" in last or "PERMISSION_DENIED" in last or "401" in last:
-                    raise AnalysisError("The Gemini API key was rejected. Check GEMINI_API_KEY in backend/.env.")
-                if not _is_transient(last) and "404" not in last:
-                    raise AnalysisError(f"AI analysis failed: {last[:300]}")
-                print(f"Gemini {model} attempt {attempt + 1} failed: {last[:120]}")
-                if "404" in last or "429" in last or "RESOURCE_EXHAUSTED" in last:
-                    break  # model retired or its quota is used up - go straight to the next one
-                time.sleep(2 + 3 * attempt)
+                last = str(e) or type(e).__name__
+                if "thinking" in last.lower() and model not in _no_thinking_level and ("400" in last or "INVALID" in last):
+                    _no_thinking_level.add(model)
+                    continue
+                break
+        if "API key" in last or "PERMISSION_DENIED" in last or "401" in last:
+            raise AnalysisError("The Gemini API key was rejected. Check GEMINI_API_KEY in backend/.env.")
+        if not _is_transient(last) and "404" not in last:
+            raise AnalysisError(f"AI analysis failed: {last[:300]}")
+        print(f"Gemini {model} failed, trying the next model: {last[:120]}")
+        _cooling[model] = time.monotonic() + COOL_OFF_S
     if "429" in last or "RESOURCE_EXHAUSTED" in last:
         raise AnalysisError("Gemini rate limit / quota reached. Please wait a minute and try again.")
     raise AnalysisError("The Gemini AI service is busy right now. Please try again in a minute.")

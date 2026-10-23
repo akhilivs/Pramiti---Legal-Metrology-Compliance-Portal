@@ -1,3 +1,5 @@
+import { shrinkImages } from './images';
+
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 const TOKEN_KEY = 'pramiti.token';
@@ -369,18 +371,26 @@ export const session = {
 
 /** Fired when the server rejects our token, so the auth provider can show the login screen. */
 export const UNAUTHORIZED_EVENT = 'pramiti:unauthorized';
+/** Fired after any successful change (inspection, review, notice...), so counts elsewhere can refresh. */
+export const DATA_CHANGED_EVENT = 'pramiti:data-changed';
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  if (init.method && init.method !== 'GET') clearApiCache();
+  const isWrite = !!init.method && init.method !== 'GET';
+  if (isWrite) clearApiCache();
   const headers = new Headers(init.headers);
   const token = session.token;
   if (token && !path.startsWith('/api/public')) headers.set('Authorization', `Bearer ${token}`);
 
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, { ...init, headers });
+    // no-store: lists and counts must always come from the server, never the browser's HTTP cache
+    res = await fetch(`${API_URL}${path}`, { cache: 'no-store', ...init, headers });
   } catch {
     throw new ApiError(`Cannot reach the Pramiti server at ${API_URL}. Check your connection or that the backend is running.`, 0);
+  } finally {
+    // An inspection can take a while; anything read meanwhile (e.g. the header badges after a page
+    // change) predates it, so drop the cache again once the write is done
+    if (isWrite) clearApiCache();
   }
 
   // a failed sign-in is not an expired session
@@ -397,6 +407,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     } catch {}
     throw new ApiError(message, res.status);
   }
+  if (isWrite) window.dispatchEvent(new Event(DATA_CHANGED_EVENT));
   return res.json() as Promise<T>;
 }
 
@@ -445,16 +456,17 @@ export const api = {
   },
   scan: (id: number | string) => request<ScanDetail>(`/api/scans/${id}`),
   deleteScan: (id: number) => request<{ deleted: number }>(`/api/scans/${id}`, { method: 'DELETE' }),
-  analyse: (files: File[], meta: ScanMeta) => request<ScanDetail>('/api/scan', { method: 'POST', body: form({ ...meta }, files) }),
-  analyseListing: (data: { url?: string; listing_text?: string; state?: string; notes?: string }, files: File[]) =>
-    request<ScanDetail>('/api/scan/listing', { method: 'POST', body: form(data, files) }),
+  analyse: async (files: File[], meta: ScanMeta) =>
+    request<ScanDetail>('/api/scan', { method: 'POST', body: form({ ...meta }, await shrinkImages(files)) }),
+  analyseListing: async (data: { url?: string; listing_text?: string; state?: string; notes?: string }, files: File[]) =>
+    request<ScanDetail>('/api/scan/listing', { method: 'POST', body: form(data, await shrinkImages(files)) }),
   review: (id: number, checks: { id: string; officer_status: CheckStatus | null; officer_note: string | null }[], notes?: string) =>
     request<ScanDetail>(`/api/scans/${id}/review`, json({ checks, notes })),
 
   batches: () => request<Batch[]>('/api/batches'),
   batch: (id: number | string) => request<Batch>(`/api/batches/${id}`),
-  createBatch: (data: { name?: string; urls?: string; state?: string; location?: string }, files: File[]) =>
-    request<Batch>('/api/batches', { method: 'POST', body: form(data, files) }),
+  createBatch: async (data: { name?: string; urls?: string; state?: string; location?: string }, files: File[]) =>
+    request<Batch>('/api/batches', { method: 'POST', body: form(data, await shrinkImages(files)) }), // ZIPs pass through unchanged
 
   notices: (status?: NoticeStatus) => request<Notice[]>(`/api/notices${status ? `?status=${status}` : ''}`),
   notice: (id: number | string) => request<Notice>(`/api/notices/${id}`),
@@ -473,7 +485,7 @@ export const api = {
   submitComplaint: (
     data: { description: string; name?: string; contact?: string; state?: string; place?: string; purchased_online?: boolean },
     files: File[],
-  ) => request<PublicComplaint>('/api/public/complaints', { method: 'POST', body: form(data, files) }),
+  ) => shrinkImages(files).then((small) => request<PublicComplaint>('/api/public/complaints', { method: 'POST', body: form(data, small) })),
   trackComplaint: (code: string) => request<PublicComplaint>(`/api/public/complaints/${encodeURIComponent(code.trim())}`),
 
   users: () => request<UserRow[]>('/api/users'),
